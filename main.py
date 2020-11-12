@@ -4,20 +4,29 @@ import random
 
 sense = sense_hat.SenseHat()
 
+ROJO = [248, 0, 0]
+VERDE = [0, 252, 0]
+NEGRO = [0, 0, 0]
+AMARILLO = [255, 255, 0]
+
+colorJugador = AMARILLO
+colorFondo = NEGRO
+colorMuro = ROJO
+colorFruta = VERDE
+
 x = 3
 y = 3
 velX = 0
 velY = 0
-colorJugador = [255, 255, 0]
-colorFondo = [0, 0, 0]
-colorMuro = [248, 0, 0] #255,0,0
-colorFruta = [0, 252, 0]
+
 numMuros = 10
 contTiempoFruta = 0
 limiteTiempoFruta = 15
-posXFruta = -1;
-posYFruta = -1;
+posXFruta = -1
+posYFruta = -1
 finPartida = False
+velocidad = 0.5
+aumentoVelocidad = 0.05
 
 sense.clear()
 
@@ -43,12 +52,10 @@ while True:
         posXFruta = random.randint(0, 7)
         posYFruta = random.randint(0, 7)
       sense.set_pixel(posXFruta, posYFruta, colorFruta)
-      print("Fruta en "+ str(posXFruta) + ","+ str(posYFruta))
+      print("Fruta colocada en "+ str(posXFruta) + ","+ str(posYFruta))
       contTiempoFruta = limiteTiempoFruta
       
-    if(velX != 0 or velY != 0):
-      contTiempoFruta = contTiempoFruta - 1
-  
+    # Control del joystick
     for event in sense.stick.get_events():
       if event.action == "pressed":
         if event.direction == "up":
@@ -63,24 +70,43 @@ while True:
         elif event.direction == "right":
           velX = 1
           velY = 0
+          
+    # Preparar movimiento de la ficha
     sense.set_pixel(x, y, colorFondo)
-    x = x + velX
-    y = y + velY
-    if(x<0 or x>7 or y<0 or y>7):
-      sense.clear((255, 0, 0))
-      finPartida = True
-    else:
+    x += velX
+    y += velY
+    
+    # Si la ficha está dentro de la pantalla
+    if(x>=0 and x<=7 and y>=0 and y<=7):
+      # Choque contra muro
       if(sense.get_pixel(x, y) == colorMuro):
-        sense.clear((255, 0, 0))
+        sense.clear(ROJO)
         finPartida = True
+      # Se come la fruta
       elif(sense.get_pixel(x, y) == colorFruta):
+        print("Fruta comida en: " + str(x) + "," + str(y))
         contTiempoFruta = 0
-      sense.set_pixel(x, y, colorJugador)
-  
-    time.sleep(0.5)
-  else:
+        #Aumento de velocidad
+        velocidad -= aumentoVelocidad 
+        print("Aumento de velocidad a: " + str(velocidad))
+        # Animación de fruta comida
+        for i in range(3):
+          sense.set_pixel(x, y, colorJugador)
+          time.sleep(0.1)
+          sense.set_pixel(x, y, colorFruta)
+          time.sleep(0.1)
+      else: # MOVER LA FICHA
+        sense.set_pixel(x, y, colorJugador)
+    else: # Si se ha salido de la pantalla
+      sense.clear(ROJO)
+      finPartida = True
+      
+    # Esperar al siguiente movimiento de la ficha
+    time.sleep(velocidad)
+  else: # Fin de partida
     for event in sense.stick.get_events():
-      if event.action == "pressed":
+      # Reiniciar juego si se pulsa Middle
+      if event.action == "pressed" and event.direction == "middle":
         finPartida = False
         sense.clear()
         x = 3
